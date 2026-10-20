@@ -112,7 +112,7 @@ app.get('/api/clients', async (req, res, next) => {
 app.post('/api/clients', async (req, res, next) => {
   try {
     const newClient = await Client.create({
-      id: req.body.id || Date.now(), // Auto-generate if missing
+      id: req.body.id || Date.now(), // Auto-generate if missing from frontend
       ...req.body,
       amount: parseFloat(req.body.amount || 0),
       sentLogs: []
