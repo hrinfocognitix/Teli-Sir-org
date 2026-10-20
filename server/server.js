@@ -112,10 +112,10 @@ app.get('/api/clients', async (req, res, next) => {
 app.post('/api/clients', async (req, res, next) => {
   try {
     const newClient = await Client.create({
-    id: Date.now(),
-    ...req.body,
-    amount: parseFloat(req.body.amount || 0),
-    sentLogs: []
+      id: req.body.id || Date.now(), // Auto-generate if missing
+      ...req.body,
+      amount: parseFloat(req.body.amount || 0),
+      sentLogs: []
     });
     res.status(201).json({ success: true, message: 'Client added successfully', data: newClient.toObject() });
   } catch (error) { next(error); }
