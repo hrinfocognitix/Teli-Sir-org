@@ -358,6 +358,15 @@ export default function App() {
     }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
   }, [clients, searchQuery, serviceFilter, urgencyFilter]);
 
+  const pageTitle = {
+    dashboard: 'Dashboard overview',
+    clients: 'Client directory',
+    fssai: 'FSSAI certificates',
+    expiring: 'Urgent & due soon',
+    payments: 'Payment tracker',
+    'whatsapp-log': 'WhatsApp activity'
+  }[activeTab];
+
 
   // ================= 1. LOGIN SCREEN =================
   if (!isAuthenticated) {
@@ -457,7 +466,7 @@ export default function App() {
 
   // ================= 2. MAIN DASHBOARD APPLICATION =================
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800">
 
       {/* TOAST NOTIFICATION */}
       {toast && (
@@ -468,9 +477,9 @@ export default function App() {
       )}
 
       {/* SIDEBAR NAVIGATION */}
-      <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 border-r border-slate-800 flex flex-col">
+      <aside className="w-full md:sticky md:top-0 md:h-screen md:w-64 bg-slate-950 text-slate-300 flex-shrink-0 border-r border-slate-800 flex flex-col shadow-2xl shadow-slate-950/10">
         <div className="p-5 border-b border-slate-800 flex items-center space-x-3">
-          <div className="w-10 h-10 bg-amber-500 text-slate-950 font-black rounded-xl flex items-center justify-center text-xl shadow">
+          <div className="w-10 h-10 bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black rounded-xl flex items-center justify-center text-xl shadow-lg shadow-amber-500/20">
             MT
           </div>
           <div>
@@ -559,13 +568,21 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* TOP BAR */}
-        <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-3 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-            <Calendar className="w-4 h-4 text-amber-600" />
-            <span>{new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur-md sm:px-6">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-600">Maruti Teli & Associates</p>
+            <div className="mt-0.5 flex items-center gap-2">
+              <h2 className="text-base font-black tracking-tight text-slate-900 sm:text-lg">{pageTitle}</h2>
+              <span className="hidden h-1.5 w-1.5 rounded-full bg-emerald-500 sm:inline-block" />
+              <span className="hidden text-[11px] font-medium text-slate-400 sm:inline">System live</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500 lg:flex">
+              <Calendar className="w-3.5 h-3.5 text-amber-600" />
+              <span>{new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            </div>
             <button
               onClick={handleBatchTriggerReminders}
               className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-2 transition shadow-sm"
@@ -594,14 +611,29 @@ export default function App() {
         </header>
 
         {/* BODY VIEWS */}
-        <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+        <main className="flex-1 space-y-6 overflow-y-auto p-4 sm:p-6 lg:p-8">
 
           {/* VIEW 1: DASHBOARD OVERVIEW */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
+              <section className="relative overflow-hidden rounded-3xl bg-slate-900 px-6 py-6 text-white shadow-xl shadow-slate-900/10 sm:px-8">
+                <div className="absolute -right-10 -top-12 h-48 w-48 rounded-full bg-amber-400/20 blur-3xl" />
+                <div className="absolute bottom-0 right-24 h-28 w-28 rounded-full bg-indigo-500/20 blur-2xl" />
+                <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-400">Compliance command centre</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Stay ahead of every client deadline.</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Monitor critical filings, pending payments and client communication from one professional workspace.</p>
+                  </div>
+                  <button onClick={() => { setEditingClient(null); setIsModalOpen(true); }} className="relative inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-300">
+                    <Plus className="h-4 w-4" /> Add client record
+                  </button>
+                </div>
+              </section>
+
               {/* KPI CARDS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Active Clients</p>
                     <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.total}</h3>
@@ -612,7 +644,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between border-l-4 border-l-yellow-500">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between border-l-4 border-l-yellow-500 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Expiring (15d - 30d)</p>
                     <h3 className="text-2xl font-black text-yellow-600 mt-1">{stats.dueSoon}</h3>
@@ -623,7 +655,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between border-l-4 border-l-red-500">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between border-l-4 border-l-red-500 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Urgent & Overdue</p>
                     <h3 className="text-2xl font-black text-red-600 mt-1">{stats.overdue + stats.urgent}</h3>
@@ -634,7 +666,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between border-l-4 border-l-emerald-500">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between border-l-4 border-l-emerald-500 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending Dues</p>
                     <h3 className="text-2xl font-black text-slate-900 mt-1">₹{stats.pendingAmt.toLocaleString('en-IN')}</h3>
