@@ -8,10 +8,24 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin(origin, callback) {
+    // Allow non-browser clients and only the configured browser origins.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Origin is not allowed by CORS'));
+  }
+}));
 app.use(express.json());
+
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, status: 'ok' });
+});
 
 const schemaOptions = { versionKey: false };
 const clientSchema = new mongoose.Schema({
