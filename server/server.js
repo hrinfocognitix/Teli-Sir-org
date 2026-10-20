@@ -111,10 +111,11 @@ app.get('/api/clients', async (req, res, next) => {
 
 app.post('/api/clients', async (req, res, next) => {
   try {
+    const { id: submittedId, ...clientData } = req.body;
     const newClient = await Client.create({
-      id: req.body.id || Date.now(), // Auto-generate if missing from frontend
-      ...req.body,
-      amount: parseFloat(req.body.amount || 0),
+      ...clientData,
+      id: submittedId ? Number(submittedId) : Date.now(),
+      amount: parseFloat(clientData.amount || 0),
       sentLogs: []
     });
     res.status(201).json({ success: true, message: 'Client added successfully', data: newClient.toObject() });
@@ -226,6 +227,12 @@ app.get('/api/whatsapp/logs', async (req, res, next) => {
 
 app.use((error, req, res, next) => {
   console.error(error);
+  if (error.name === 'ValidationError') {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+  if (error.code === 11000) {
+    return res.status(409).json({ success: false, message: 'A record with this ID already exists. Please try saving again.' });
+  }
   res.status(error.status || 500).json({ success: false, message: error.message || 'Server operation failed' });
 });
 
