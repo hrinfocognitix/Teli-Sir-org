@@ -66,12 +66,18 @@ async function sendWhatsAppTextMessage(to, body) {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   if (!accessToken || !phoneNumberId) {
-    const error = new Error('WhatsApp Cloud API is not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID.');
+    const missingSettings = [
+      !accessToken && 'WHATSAPP_ACCESS_TOKEN',
+      !phoneNumberId && 'WHATSAPP_PHONE_NUMBER_ID'
+    ].filter(Boolean);
+    console.warn(`[WhatsApp] Send blocked: missing environment variable(s): ${missingSettings.join(', ')}`);
+    const error = new Error(`WhatsApp Cloud API is not configured. Missing: ${missingSettings.join(', ')}.`);
     error.status = 503;
     throw error;
   }
 
   const apiVersion = process.env.WHATSAPP_GRAPH_API_VERSION || 'v22.0';
+  console.info(`[WhatsApp] Sending text message via Graph API ${apiVersion} using phone-number ID ending in ${phoneNumberId.slice(-4)}.`);
   const response = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -81,10 +87,12 @@ async function sendWhatsAppTextMessage(to, body) {
   });
   const payload = await response.json();
   if (!response.ok) {
+    console.error(`[WhatsApp] Meta API rejected message (HTTP ${response.status}, code: ${payload?.error?.code || 'unknown'}): ${payload?.error?.message || 'No error message returned'}`);
     const error = new Error(payload?.error?.message || 'WhatsApp Cloud API rejected the message.');
     error.status = response.status;
     throw error;
   }
+  console.info(`[WhatsApp] Message accepted by Meta. Message ID: ${payload?.messages?.[0]?.id || 'not returned'}`);
   return payload;
 }
 
@@ -208,6 +216,7 @@ app.post('/api/whatsapp/send-reminder', async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Client phone number is not valid for WhatsApp.' });
     }
 
+    console.info(`[WhatsApp] Starting due-date reminder for client ID ${client.id}.`);
     const whatsappResponse = await sendWhatsAppTextMessage(recipient, buildDueReminderMessage(client));
     const log = await WhatsappLog.create({
       id: Date.now(), clientId: client.id, clientName: client.name, phone: recipient,
@@ -243,6 +252,8 @@ async function startServer() {
   }
   await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
   console.log(`MongoDB connected: ${mongoose.connection.name}`);
+  const whatsappConfigured = Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
+  console.log(`WhatsApp Cloud API configuration: ${whatsappConfigured ? 'ready' : 'not configured'}`);
   app.listen(PORT, () => {
     console.log(`Maruti Teli Backend Server Running on http://localhost:${PORT}`);
   });
