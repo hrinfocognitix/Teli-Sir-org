@@ -39,6 +39,18 @@ function getRelativeDateStr(daysOffset) {
   return date.toISOString().split('T')[0];
 }
 
+function getDateAfterMonths(months) {
+  const today = new Date();
+  const target = new Date(today.getFullYear(), today.getMonth() + months, 1);
+  const lastDayOfTargetMonth = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(today.getDate(), lastDayOfTargetMonth));
+
+  const year = target.getFullYear();
+  const month = String(target.getMonth() + 1).padStart(2, '0');
+  const day = String(target.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // --- COLOR MATRIX & URGENCY LOGIC ---
 function calculateDueStatus(dueDateStr, paymentStatus) {
   if (paymentStatus === 'Paid') {
@@ -260,47 +272,13 @@ export default function App() {
 
   // --- WHATSAPP DISPATCH LOGIC ---
   const sendWhatsAppReminder = async (client) => {
-    const status = calculateDueStatus(client.dueDate, client.paymentStatus);
-    const cleanPhone = client.phone.replace(/[^0-9]/g, '');
-
-    let header = "FINANCIAL & COMPLIANCE NOTICE";
-    let stage = "General Notice";
-
-    if (status.category === 'OVERDUE') {
-      header = "⚠️ URGENT: OVERDUE COMPLIANCE NOTICE";
-      stage = "Overdue Notice";
-    } else if (status.category === 'EXTREMELY_URGENT') {
-      header = "🚨 CRITICAL: 2-DAY COMPLIANCE DEADLINE";
-      stage = "2 Days Notice";
-    } else if (status.category === 'URGENT') {
-      header = "📅 REMINDER: 1-WEEK COMPLIANCE DEADLINE";
-      stage = "1 Week Notice";
-    } else if (status.category === 'WARNING') {
-      header = "🗓️ ADVANCE NOTICE: 15 DAYS REMAINING";
-      stage = "15 Days Notice";
-    } else if (status.category === 'EARLY') {
-      header = "📌 UPCOMING COMPLIANCE REMINDER (1 MONTH)";
-      stage = "1 Month Notice";
-    }
-
-    const message = `*MARUTI TELI & ASSOCIATES - ${header}*\n\nDear *${client.name}*,\n\nThis is an official compliance update from Maruti Teli & Associates:\n\n• *Service/Document*: ${client.service}\n• *Due Date*: ${client.dueDate}\n• *PAN/GSTIN*: ${client.pangst || 'N/A'}\n• *Pending Amount*: ₹${Number(client.amount || 0).toLocaleString('en-IN')}\n\nPlease submit pending documents / settle fee dues promptly to complete timely filing.\n\nWarm Regards,\n*Maruti Teli & Associates*\n_Financial & Tax Advisory Services_`;
-
-    const newLog = {
-      clientId: client.id,
-      clientName: client.name,
-      phone: client.phone,
-      service: client.service,
-      stage,
-      timestamp: new Date().toISOString()
-    };
-
     try {
-      const savedLog = await api.createWhatsappLog(newLog);
-      setWhatsappLogs(current => [savedLog, ...current]);
+      const result = await api.sendWhatsappReminder(client.id);
+      setWhatsappLogs(current => [result.log, ...current]);
+      showToast(`WhatsApp reminder sent to ${client.name}.`, 'success');
     } catch (error) {
-      showToast(`Could not save reminder history: ${error.message}`, 'error');
+      showToast(`Could not send WhatsApp reminder: ${error.message}`, 'error');
     }
-    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleBatchTriggerReminders = () => {
@@ -1093,6 +1071,7 @@ export default function App() {
 
 // --- CLIENT FORM MODAL COMPONENT ---
 function ClientModal({ client, onClose, onSave }) {
+  const [dueDateOption, setDueDateOption] = useState('manual');
   const [formData, setFormData] = useState({
     id: client?.id || '',
     name: client?.name || '',
@@ -1196,13 +1175,34 @@ function ClientModal({ client, onClose, onSave }) {
             </div>
             <div>
               <label className="block font-bold text-slate-700 mb-1">Due / Expiry Date *</label>
+              <select
+                value={dueDateOption}
+                onChange={(e) => {
+                  const option = e.target.value;
+                  setDueDateOption(option);
+                  if (option !== 'manual') {
+                    setFormData(current => ({ ...current, dueDate: getDateAfterMonths(Number(option)) }));
+                  }
+                }}
+                className="w-full mb-2 px-3 py-2 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                aria-label="Due date calculation option"
+              >
+                <option value="manual">Enter a date manually</option>
+                <option value="1">Auto-calculate: 1 month from today</option>
+                <option value="6">Auto-calculate: 6 months from today</option>
+                <option value="12">Auto-calculate: 1 year from today</option>
+              </select>
               <input
                 type="date"
                 required
                 value={formData.dueDate}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                onChange={(e) => {
+                  setDueDateOption('manual');
+                  setFormData({ ...formData, dueDate: e.target.value });
+                }}
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
               />
+              <p className="mt-1 text-[10px] text-slate-500">Choosing an automatic option calculates the date from today. You can still adjust the date manually.</p>
             </div>
           </div>
 

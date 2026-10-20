@@ -30,7 +30,8 @@ app.get('/api/health', (req, res) => {
 const schemaOptions = { versionKey: false };
 const clientSchema = new mongoose.Schema({
   id: { type: Number, required: true, unique: true, index: true },
-  name: String, phone: String, email: String, panGst: String, serviceType: String,
+  name: String, phone: String, email: String, panGst: String, pangst: String,
+  serviceType: String, service: String,
   dueDate: String, amount: { type: Number, default: 0 }, paymentStatus: String,
   notes: String, sentLogs: { type: [mongoose.Schema.Types.Mixed], default: [] }
 }, schemaOptions);
@@ -50,6 +51,42 @@ const whatsappLogSchema = new mongoose.Schema({
 const Client = mongoose.model('Client', clientSchema);
 const FssaiRecord = mongoose.model('FssaiRecord', fssaiSchema);
 const WhatsappLog = mongoose.model('WhatsappLog', whatsappLogSchema);
+
+function getWhatsAppRecipient(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.length === 10 ? `91${digits}` : digits;
+}
+
+function buildDueReminderMessage(client) {
+  const service = client.service || client.serviceType || 'service';
+  return `Dear ${client.name}, your ${service} due date is approaching on ${client.dueDate}. Please contact Maruti Teli & Associates to complete the required process.\n\nप्रिय ${client.name}, आपल्या ${service} ची अंतिम तारीख ${client.dueDate} रोजी आहे. कृपया आवश्यक प्रक्रिया पूर्ण करण्यासाठी Maruti Teli & Associates यांच्याशी संपर्क साधा.`;
+}
+
+async function sendWhatsAppTextMessage(to, body) {
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!accessToken || !phoneNumberId) {
+    const error = new Error('WhatsApp Cloud API is not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID.');
+    error.status = 503;
+    throw error;
+  }
+
+  const apiVersion = process.env.WHATSAPP_GRAPH_API_VERSION || 'v22.0';
+  const response = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp', to, type: 'text', text: { preview_url: false, body }
+    })
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    const error = new Error(payload?.error?.message || 'WhatsApp Cloud API rejected the message.');
+    error.status = response.status;
+    throw error;
+  }
+  return payload;
+}
 
 // ================= AUTHENTICATION =================
 app.post('/api/login', (req, res) => {
@@ -160,6 +197,26 @@ app.post('/api/whatsapp/log', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+app.post('/api/whatsapp/send-reminder', async (req, res, next) => {
+  try {
+    const client = await Client.findOne({ id: Number(req.body.clientId) }).lean();
+    if (!client) return res.status(404).json({ success: false, message: 'Client not found' });
+
+    const recipient = getWhatsAppRecipient(client.phone);
+    if (recipient.length < 10) {
+      return res.status(400).json({ success: false, message: 'Client phone number is not valid for WhatsApp.' });
+    }
+
+    const whatsappResponse = await sendWhatsAppTextMessage(recipient, buildDueReminderMessage(client));
+    const log = await WhatsappLog.create({
+      id: Date.now(), clientId: client.id, clientName: client.name, phone: recipient,
+      serviceType: client.service || client.serviceType, stageLabel: 'Due date reminder sent',
+      timestamp: new Date().toISOString()
+    });
+    res.json({ success: true, message: 'WhatsApp reminder sent successfully.', log: log.toObject(), whatsappResponse });
+  } catch (error) { next(error); }
+});
+
 app.get('/api/whatsapp/logs', async (req, res, next) => {
   try {
     const logs = await WhatsappLog.find().sort({ timestamp: -1 }).lean();
@@ -169,7 +226,7 @@ app.get('/api/whatsapp/logs', async (req, res, next) => {
 
 app.use((error, req, res, next) => {
   console.error(error);
-  res.status(500).json({ success: false, message: 'Database operation failed' });
+  res.status(error.status || 500).json({ success: false, message: error.message || 'Server operation failed' });
 });
 
 // Start Server

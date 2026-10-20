@@ -45,5 +45,9 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(log),
   })).log,
+  sendWhatsappReminder: (clientId) => request('/whatsapp/send-reminder', {
+    method: 'POST',
+    body: JSON.stringify({ clientId }),
+  }),
   clearWhatsappLogs: () => request('/whatsapp/logs', { method: 'DELETE' }),
 };
