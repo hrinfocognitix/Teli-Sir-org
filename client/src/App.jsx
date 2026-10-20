@@ -32,6 +32,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { api } from './api';
+import heroImage from './assets/hero.png';
 
 function getRelativeDateStr(daysOffset) {
   const date = new Date();
@@ -361,17 +362,43 @@ export default function App() {
   // ================= 1. LOGIN SCREEN =================
   if (!isAuthenticated) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4 font-sans text-slate-800">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
-          <div className="bg-slate-900 text-white p-8 text-center border-b border-slate-800">
-            <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 rounded-2xl flex items-center justify-center text-3xl font-black mx-auto mb-3 shadow-lg">
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-950 p-4 font-sans text-slate-800">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.19),transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(79,70,229,0.22),transparent_38%)]" />
+        <img src={heroImage} alt="" className="absolute -left-20 bottom-[-6rem] w-[26rem] rotate-[-18deg] opacity-15 blur-[1px]" />
+        <img src={heroImage} alt="" className="absolute -right-24 -top-20 w-[25rem] rotate-[154deg] opacity-10 blur-[1px]" />
+
+        <div className="relative grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/20 bg-white shadow-2xl shadow-slate-950/50 md:grid-cols-[1.08fr_0.92fr]">
+          <section className="relative hidden min-h-[34rem] overflow-hidden bg-slate-900 p-10 text-white md:flex md:flex-col md:justify-between">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.76)),radial-gradient(circle_at_75%_22%,rgba(245,158,11,0.32),transparent_28%)]" />
+            <img src={heroImage} alt="Abstract financial data layers" className="absolute right-[-3.5rem] top-16 w-[23rem] rotate-[-10deg] opacity-70" />
+            <div className="relative">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 text-xl font-black text-slate-950 shadow-lg shadow-amber-500/20">MT</div>
+                <div>
+                  <p className="text-sm font-black tracking-wide">MARUTI TELI</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">& Associates</p>
+                </div>
+              </div>
+            </div>
+            <div className="relative max-w-sm">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-300">Client Management Portal</span>
+              <h1 className="text-4xl font-black leading-tight tracking-tight">Clarity for every compliance deadline.</h1>
+              <p className="mt-4 text-sm leading-6 text-slate-300">Keep client records, due dates, filings and communication in one secure workspace.</p>
+            </div>
+            <p className="relative text-[11px] font-medium text-slate-400">Professional tax, compliance & advisory services</p>
+          </section>
+
+          <section className="bg-white">
+          <div className="border-b border-slate-100 bg-white p-7 text-center md:text-left">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 text-2xl font-black text-slate-950 shadow-lg shadow-amber-500/20 md:hidden">
               MT
             </div>
-            <h1 className="text-2xl font-black tracking-wide">MARUTI TELI & ASSOCIATES</h1>
-            <p className="text-xs font-semibold text-amber-400 uppercase tracking-widest mt-1">Tax & Advisory Client Portal</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-600">Secure access</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900">Welcome back</h2>
+            <p className="mt-1 text-xs text-slate-500">Sign in to manage your client compliance records.</p>
           </div>
 
-          <form onSubmit={handleLogin} className="p-8 space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5 p-7 sm:p-8">
             <div>
               <label className="block text-xs font-bold uppercase text-slate-600 mb-1">User ID / Registration</label>
               <div className="relative">
@@ -409,18 +436,19 @@ export default function App() {
 
             <button
               type="submit"
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-xs border border-slate-700"
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 py-3 text-xs font-semibold text-white shadow-lg shadow-slate-900/20 transition duration-200 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center gap-2"
             >
               <span>Sign In to Dashboard</span>
               <ChevronRight className="w-4 h-4 text-amber-400" />
             </button>
 
-            <div className="text-center pt-2">
+            <div className="border-t border-slate-100 pt-4 text-center">
               <p className="text-[11px] text-slate-500">
-                Demo User ID: <span className="font-mono font-bold text-slate-700">maruti_teli</span> | Password: <span className="font-mono font-bold text-slate-700">admin123</span>
+                Protected access for authorised staff
               </p>
             </div>
           </form>
+          </section>
         </div>
       </div>
     );
